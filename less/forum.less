@@ -1,0 +1,200 @@
+/*
+ * Tributary — branching replies.
+ *
+ * 🚨 Nothing here redefines a core CSS variable at :root. A theme sets those,
+ * and an extension that overwrites one changes the whole forum rather than its
+ * own corner of it.
+ */
+
+.Tributary-replyingTo {
+  align-items: baseline;
+  color: var(--muted-color);
+  display: flex;
+  font-size: 13px;
+  gap: 6px;
+  margin-bottom: 8px;
+  max-width: 100%;
+  text-decoration: none;
+
+  &:hover,
+  &:focus {
+    color: var(--link-color);
+    text-decoration: none;
+
+    .Tributary-replyingTo-excerpt {
+      opacity: 1;
+    }
+  }
+
+  &--loading {
+    opacity: 0.6;
+  }
+}
+
+.Tributary-replyingTo-icon {
+  flex: none;
+  font-size: 11px;
+  transform: scaleX(-1);
+}
+
+.Tributary-replyingTo-excerpt {
+  // The quoted words are context, not content: they must never compete with
+  // the post itself, and must never wrap onto a second line.
+  flex: 1 1 auto;
+  min-width: 0;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.Tributary-branch {
+  margin-top: 10px;
+}
+
+.Tributary-branchToggle {
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted-color);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+
+  &:hover {
+    background: var(--control-bg);
+    color: var(--control-color);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+  }
+
+  i {
+    // A caret that does not shift the words when it turns.
+    display: inline-block;
+    text-align: center;
+    width: 10px;
+  }
+}
+
+.Tributary-branchList {
+  margin-top: 6px;
+}
+
+.Tributary-branchLoading,
+.Tributary-branchEmpty {
+  color: var(--muted-color);
+  font-size: 13px;
+  padding: 8px 0 8px 12px;
+}
+
+/*
+ * One reply. The indent is driven entirely by --tributary-depth, set inline,
+ * so there is no per-level selector to keep in step with the depth cap.
+ */
+.Tributary-reply {
+  border-left: 2px solid var(--control-bg);
+  margin-left: ~"calc((var(--tributary-depth, 1) - 1) * 16px)";
+  padding: 8px 0 8px 12px;
+
+  & + .Tributary-reply {
+    border-top: 0;
+  }
+
+  &:hover {
+    border-left-color: var(--muted-color);
+  }
+}
+
+.Tributary-replyHead {
+  align-items: center;
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.Tributary-replyAvatar {
+  height: 20px;
+  width: 20px;
+}
+
+.Tributary-replyAuthor {
+  color: var(--heading-color);
+  font-weight: 600;
+}
+
+.Tributary-replyTime {
+  color: var(--muted-color);
+}
+
+.Tributary-replyBody {
+  font-size: 14px;
+
+  // A post inside a branch is a quotation of the conversation, not the
+  // conversation: images and quotes are held to a size that keeps the branch
+  // readable rather than becoming a second post stream.
+  img {
+    max-height: 260px;
+    max-width: 100%;
+  }
+
+  blockquote {
+    font-size: 13px;
+  }
+
+  > :first-child {
+    margin-top: 0;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
+}
+
+.Tributary-more {
+  margin-left: 12px;
+}
+
+/*
+ * The composer, while it is answering a particular post.
+ */
+.Tributary-answering {
+  align-items: center;
+  background: var(--control-bg);
+  border-radius: 4px;
+  color: var(--control-color);
+  display: flex;
+  font-size: 13px;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+}
+
+.Tributary-answering-cancel {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  margin-left: auto;
+  opacity: 0.7;
+  padding: 2px 4px;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  // 🚨 Half the indent on a phone. At 16px a sixth-level reply starts eighty
+  // pixels in, which on a narrow screen leaves a column too thin to read.
+  .Tributary-reply {
+    margin-left: ~"calc((var(--tributary-depth, 1) - 1) * 8px)";
+    padding-left: 8px;
+  }
+}
