@@ -1,7 +1,9 @@
 ernestdefoe-tributary:
 
   forum:
-    reply_to: Reply
+    # 🚨 Not simply "Reply": core already puts a Reply on every post, and two
+    # buttons a centimetre apart with the same word on them is a coin toss.
+    reply_to: Reply in thread
     in_reply_to: "In reply to {username}"
     reply_count: "{count, plural, one {# reply} other {# replies}}"
     branch_empty: Nothing here any more.
