@@ -2,7 +2,6 @@ import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 import Button from 'flarum/common/components/Button';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
-import avatar from 'flarum/common/helpers/avatar';
 import humanTime from 'flarum/common/helpers/humanTime';
 
 import { branchFor } from '../branches';
@@ -87,14 +86,34 @@ export default class BranchPanel extends Component {
             style={`--tributary-depth: ${row.depth}`}
           >
             <div className="Tributary-replyHead">
-              {row.user ? avatar(row.user, { className: 'Tributary-replyAvatar' }) : null}
+              {/*
+                🚨 Hand-rolled, NOT core's avatar() and humanTime() helpers.
+                Those take Flarum MODELS and call methods on them —
+                `user.displayName()`, `date.getTime()`. These rows are plain
+                objects from this extension's own endpoint, so the helpers
+                throw "… is not a function" while the tree is being built. The
+                branch then never renders and the spinner spins for ever, and
+                the only console error names whichever bundle happens to be
+                last in the stack — a theme, in our case. It looked exactly
+                like a dead feature for an hour.
+              */}
+              {row.user?.avatarUrl ? (
+                <img className="Tributary-replyAvatar" src={row.user.avatarUrl} alt="" />
+              ) : (
+                <span className="Tributary-replyAvatar Tributary-replyAvatar--blank">
+                  {(row.user?.displayName || '?').charAt(0).toUpperCase()}
+                </span>
+              )}
 
-              <a className="Tributary-replyAuthor" href={row.user ? app.route.user(row.user) : '#'}>
+              <a
+                className="Tributary-replyAuthor"
+                href={row.user ? app.route('user', { username: row.user.username }) : '#'}
+              >
                 {row.user ? row.user.displayName : app.translator.trans('core.lib.username.deleted_text')}
               </a>
 
               <a className="Tributary-replyTime" href={this.permalink(row)}>
-                {humanTime(row.createdAt)}
+                {humanTime(new Date(row.createdAt))}
               </a>
             </div>
 
