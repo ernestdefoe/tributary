@@ -2,7 +2,7 @@
 
 **Branching replies for Flarum 2.**
 
-A long discussion is one flat column. Somebody answers post #4, thirty posts later somebody answers *that*, and by the time you arrive there are four conversations interleaved and no way to tell which is which. Tributary gives a reply a memory of what it was answering.
+A long discussion is one flat column. Somebody answers the fourth post, thirty posts later somebody answers *that*, and by the time you arrive there are four conversations interleaved and no way to tell which is which. Tributary gives a reply a memory of what it was answering.
 
 ![A discussion with reply chips and branch toggles](screenshots/thread.png)
 
