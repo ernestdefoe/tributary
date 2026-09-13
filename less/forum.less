@@ -48,8 +48,27 @@
   white-space: nowrap;
 }
 
+/*
+ * 🚨 Space BELOW as well as above, and more of it than above.
+ *
+ * An open branch is the tallest thing this extension adds, and whatever comes
+ * after a post — the vote and reply controls, and a stats bar if Topic Map is
+ * installed — sits immediately underneath it. With no bottom margin the last
+ * reply, the controls and the next post's header stack into one undifferen-
+ * tiated column and the branch stops reading as a thing that belongs to the
+ * post above it.
+ */
 .Tributary-branch {
-  margin-top: 10px;
+  margin: 14px 0 0;
+
+  /*
+   * 🚨 PADDING, not margin. The list inside carries its own bottom margin and
+   * the two collapse into each other — measured at exactly 0px of separation
+   * — so the last reply ended up flush against the vote controls and, with
+   * Topic Map installed, against its stats bar too. Padding on the container
+   * cannot collapse.
+   */
+  padding-bottom: 16px;
 }
 
 .Tributary-branchToggle {
@@ -83,7 +102,7 @@
 }
 
 .Tributary-branchList {
-  margin-top: 6px;
+  margin: 8px 0 0;
 }
 
 .Tributary-branchLoading,
@@ -104,6 +123,10 @@
 
   & + .Tributary-reply {
     border-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 10px;
   }
 
   &:hover {
