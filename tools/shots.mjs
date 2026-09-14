@@ -18,7 +18,19 @@ import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const CHROME = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+/*
+ * 🚨 Not a hard-coded Windows path. This script is run from whichever machine
+ * is to hand, and a path that only exists on one of them turns "regenerate the
+ * README shots" into "first port the script", which is how a README ends up
+ * showing a version of the UI that shipped three changes ago.
+ */
+const CHROME =
+  process.env.CHROME ||
+  {
+    darwin: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    win32: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  }[process.platform] ||
+  '/usr/bin/google-chrome';
 const BASE = process.env.TRIBUTARY_BASE || 'https://dev.ernestdefoe.online';
 const TOKEN = process.env.TRIBUTARY_TOKEN || '';
 const PATH_ = process.env.TRIBUTARY_PATH || '/d/24';
@@ -34,6 +46,19 @@ const browser = await puppeteer.launch({
 });
 
 const page = await browser.newPage();
+
+/*
+ * 🚨 The colour scheme is PINNED, not inherited from whichever machine is
+ * running this.
+ *
+ * theme-toggle honours `prefers-color-scheme`, and headless Chrome reports
+ * whatever the host OS is set to — so the same script produced dark shots on
+ * the Windows box and light ones on the Mac, and "regenerate the README
+ * screenshots after a one-line CSS fix" silently reskinned the whole README.
+ */
+await page.emulateMediaFeatures([
+  { name: 'prefers-color-scheme', value: process.env.SHOTS_THEME || 'dark' },
+]);
 
 if (TOKEN) {
   await page.setCookie({
