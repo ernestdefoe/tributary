@@ -200,6 +200,20 @@
 }
 
 /*
+ * The branch glyph, wherever it stands for "this reply hangs off that post".
+ *
+ * 🚨 Flipped. Font Awesome draws code-branch as a MERGE — read top to bottom,
+ * the side arm comes back INTO the trunk — and a threading extension is
+ * saying the opposite thing: the conversation divides as it goes down.
+ * Reported by ClaudiusH on discuss.flarum.org, and he is right.
+ */
+.Tributary-branchIcon,
+.Tributary-replyButton .Button-icon {
+  display: inline-block;
+  transform: scaleY(-1);
+}
+
+/*
  * The composer, while it is answering a particular post.
  */
 .Tributary-answering {
@@ -210,8 +224,26 @@
   display: flex;
   font-size: 13px;
   gap: 8px;
-  margin-bottom: 8px;
-  padding: 6px 10px;
+  padding: 4px 10px;
+}
+
+/*
+ * 🚨 The gap has to be bought TWICE OVER, and this is why an eyeballed 4px
+ * looked like nothing at all.
+ *
+ * Core sets `margin-right: -4px` on every `.ComposerBody-header > li` to
+ * swallow the whitespace between inline-blocks. So the title's own li drags
+ * this one four pixels LEFT: measured, the pill did not sit flush against the
+ * discussion title, it overlapped its last glyph by 4px. The first 4px here
+ * only pays that back; the rest is the space people can actually see.
+ *
+ * `vertical-align` for the same reason a bottom margin is no longer set here:
+ * an inline-block on the baseline hangs its margin box below the text, so 8px
+ * of margin-bottom was lifting the pill 7px clear of the title beside it.
+ */
+.item-tributaryAnswering {
+  margin-inline-start: 12px;
+  vertical-align: middle;
 }
 
 .Tributary-answering-cancel {
@@ -228,11 +260,24 @@
   }
 }
 
-@media (max-width: 767px) {
+/*
+ * 🚨 `@phone`, not a hand-written `max-width: 767px`. Core's phone breakpoint
+ * is 767.98px, so a literal 767px leaves a 0.98px band in which neither the
+ * phone rules nor the desktop ones apply — a gap that only shows up on a
+ * fractional viewport and reads as a random layout glitch.
+ */
+@media @phone {
   // 🚨 Half the indent on a phone. At 16px a sixth-level reply starts eighty
   // pixels in, which on a narrow screen leaves a column too thin to read.
   .Tributary-reply {
     margin-left: ~"calc((var(--tributary-depth, 1) - 1) * 8px)";
     padding-left: 8px;
+  }
+
+  // Core stacks the header items into full-width rows on a phone, each with
+  // its own padding and rule beneath it. An indent that lines the pill up
+  // beside the title on a desktop just knocks it out of that column here.
+  .item-tributaryAnswering {
+    margin-inline-start: 0;
   }
 }

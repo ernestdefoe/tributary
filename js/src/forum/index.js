@@ -43,7 +43,7 @@ app.initializers.add('ernestdefoe-tributary', () => {
       'tributaryReply',
       Button.component(
         {
-          className: 'Button Button--link',
+          className: 'Button Button--link Tributary-replyButton',
           icon: 'fas fa-code-branch',
           onclick: () => reply(post),
         },
@@ -111,7 +111,7 @@ app.initializers.add('ernestdefoe-tributary', () => {
     items.add(
       'tributaryAnswering',
       <div className="Tributary-answering">
-        <i className="fas fa-code-branch" aria-hidden="true" />
+        <i className="fas fa-code-branch Tributary-branchIcon" aria-hidden="true" />
         {app.translator.trans('ernestdefoe-tributary.forum.answering', {
           username: parent.displayName,
         })}
