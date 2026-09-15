@@ -72,6 +72,16 @@
 }
 
 .Tributary-branchToggle {
+  /*
+   * 🚨 `align-items: center`, and its absence is not a small thing.
+   *
+   * An inline-flex box with no align-items defaults to `stretch`, so the
+   * caret and the label are each pulled to the full height of the row and sit
+   * top-aligned against one another. It reads as a misaligned control rather
+   * than as a missing line of CSS, which is exactly how ClaudiusH found it —
+   * by looking at it, not by reading this file.
+   */
+  align-items: center;
   background: none;
   border: 0;
   border-radius: 4px;

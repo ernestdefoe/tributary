@@ -5,6 +5,7 @@ import Model from 'flarum/common/Model';
 import Post from 'flarum/common/models/Post';
 import DiscussionControls from 'flarum/forum/utils/DiscussionControls';
 import extractText from 'flarum/common/utils/extractText';
+import watchForReplies from './watchForReplies';
 
 import BranchPanel from './components/BranchPanel';
 import ReplyingTo from './components/ReplyingTo';
@@ -19,6 +20,14 @@ import { forgetBranches, branchFor } from './branches';
  * whole forum bundle down, not just this extension.
  */
 app.initializers.add('ernestdefoe-tributary', () => {
+  /*
+   * 🚨 Registered first, because it overrides the STORE and everything below
+   * reads from it. A reply arriving — posted here or pushed in by
+   * flarum/realtime — has to update the count on the post it answers, or the
+   * "3 replies" toggle does not appear until the page is reloaded.
+   */
+  watchForReplies();
+
   Post.prototype.tributaryParentId = Model.attribute('tributaryParentId');
   Post.prototype.tributaryReplyCount = Model.attribute('tributaryReplyCount');
 
