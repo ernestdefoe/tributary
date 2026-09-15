@@ -96,3 +96,7 @@ Flarum **2.0+**, PHP **8.3+**. No dependency on any other extension — `tributa
 ## Licence
 
 [MIT](LICENSE).
+
+## Changelog
+
+Every release, with what changed and why: **[CHANGELOG.md](CHANGELOG.md)**.
