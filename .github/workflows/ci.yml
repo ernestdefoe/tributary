@@ -47,6 +47,15 @@ jobs:
         working-directory: js
         run: npm install --no-audit --no-fund
 
+      # 🚨 The reply-count arithmetic. Every way it can be wrong renders
+      # perfectly — the panel opens, the replies inside it are right, and only
+      # the number on the toggle is off. 1.0.2 shipped a version that counted
+      # every reply twice and nothing about the page looked broken, which is
+      # why this is a gate and not a habit.
+      - name: Unit tests
+        working-directory: js
+        run: node --test tests/*.test.mjs
+
       - name: Build
         working-directory: js
         run: npm run build
@@ -62,25 +71,3 @@ jobs:
             git diff --stat -- js/dist
             exit 1
           fi
-
-  js:
-    name: JS
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '22' }
-
-      # 🚨 The reply-count arithmetic. Every way it can be wrong renders
-      # perfectly — the panel opens, the replies inside it are right, and only
-      # the number on the toggle is off. 1.0.2 shipped a version that counted
-      # every reply twice and nothing about the page looked broken.
-      - name: Unit tests
-        working-directory: js
-        run: node --test tests/*.test.mjs
-
-      - name: Build the bundle
-        working-directory: js
-        run: |
-          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
-          npm run build
