@@ -6,6 +6,37 @@ was answering without rebuilding the post stream as a tree.
 Every entry links to its full release notes, which carry the reasoning and, for
 the bugs, what actually went wrong.
 
+## [v1.0.3] — 2026-09-16
+
+**Every reply was counted twice.** Reported by **@ClaudiusH**, and introduced by
+the fix in v1.0.2 — if you are on v1.0.2, update.
+
+### Fixed
+
+- A thread with three replies read **"5 replies"**, adding one more took it to
+  **"7"**, and a brand-new thread said "1 replies" until you reloaded and it
+  became "2". The v1.0.2 fix hooked `Store.pushObject`, which is one level below
+  the point where "the server is handing me one new post" is still
+  distinguishable from "the server is handing me a page of history" — so it
+  incremented on both, on top of a count the server had already included them
+  in.
+
+  It now hooks `Store.pushPayload`, where a single resource (a reply being
+  created, or one pushed in live) is still distinct from an array (a page of the
+  stream, a branch being opened). An array means the server is describing what
+  already exists, and what already exists is already in the count that arrived
+  with it.
+
+  The live update from v1.0.2 is kept: reply to a post and the toggle still
+  appears straight away, and still does when somebody else replies.
+
+### Internal
+
+- The counting decision is now a pure function with tests, including ClaudiusH's
+  exact sequence as arithmetic, and CI runs them. A wrong count renders
+  perfectly — the panel opens and the replies in it are right — so looking at
+  the page never catches it.
+
 ## [v1.0.2] — 2026-09-15
 
 **The reply count updates as you watch.** Two fixes, both reported by
@@ -93,6 +124,7 @@ can actually see — both enforced on the server whatever the browser sends.
 Deleting a post does **not** delete the replies to it: the answers usually
 outlive the question.
 
+[v1.0.3]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.3
 [v1.0.2]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.2
 [v1.0.1]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.1
 [v1.0.0]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.0
