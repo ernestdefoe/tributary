@@ -6,6 +6,24 @@ was answering without rebuilding the post stream as a tree.
 Every entry links to its full release notes, which carry the reasoning and, for
 the bugs, what actually went wrong.
 
+## [v1.0.4] — 2026-09-16
+
+**A nested reply only updated the post it answered.** Reported by **@ClaudiusH**.
+
+### Fixed
+
+- A Tributary count is the whole **branch** beneath a post, not its direct
+  answers — so a reply three levels down belongs in three different counts.
+  v1.0.3 bumped only the immediate parent, so the pill on the post you answered
+  moved and every pill above it stayed stale until a reload.
+
+  The walk now climbs the whole ancestor chain, stopping at the edge of what is
+  loaded: a post that is not on screen has no stale number to correct and will
+  arrive with the right one when the reader scrolls to it. The climb is also
+  cycle-guarded — those ids come from the browser's store rather than from the
+  server's own checks, and a loop would freeze the tab inside a redraw rather
+  than merely printing a wrong number.
+
 ## [v1.0.3] — 2026-09-16
 
 **Every reply was counted twice.** Reported by **@ClaudiusH**, and introduced by
@@ -124,6 +142,7 @@ can actually see — both enforced on the server whatever the browser sends.
 Deleting a post does **not** delete the replies to it: the answers usually
 outlive the question.
 
+[v1.0.4]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.4
 [v1.0.3]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.3
 [v1.0.2]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.2
 [v1.0.1]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.1

@@ -1,6 +1,6 @@
 import { override } from 'flarum/common/extend';
 
-import { parentToIncrement } from './countNewReply';
+import { ancestorsToIncrement } from './countNewReply';
 
 /**
  * Keep a parent post's reply count true without a page reload.
@@ -34,24 +34,39 @@ import { parentToIncrement } from './countNewReply';
  * 🚨 Incrementing a server-computed number is only ever safe for a post the
  * server had not yet seen when it computed it. That is the invariant; if a
  * future change cannot honour it, refetch the parent instead of guessing.
+ *
+ * 🚨 And the count is the whole BRANCH, so a new reply belongs in the count of
+ * every post above it, not just the one it answered.
  */
 export default function watchForReplies() {
   override('flarum/common/Store', 'pushPayload', function (original, payload) {
-    const parentId = parentToIncrement(payload, (id) => !!this.getById('posts', id));
+    const ids = ancestorsToIncrement(
+      payload,
+      (id) => !!this.getById('posts', id),
+      (id) => this.getById('posts', id)?.tributaryParentId?.()
+    );
 
     const result = original(payload);
 
-    if (!parentId) return result;
+    /*
+     * 🚨 EVERY ancestor, not just the post that was answered.
+     *
+     * The count on a toggle is the whole branch beneath that post, so a reply
+     * three levels down belongs in three counts. Bumping only the immediate
+     * parent left every pill above it stale until a reload — reported by
+     * ClaudiusH against 1.0.3.
+     */
+    for (const id of ids) {
+      const post = this.getById('posts', id);
 
-    const parent = this.getById('posts', parentId);
+      // Re-checked after the push: the payload may itself have been what put
+      // this post in the store, carrying a fresh count of its own.
+      if (!post) continue;
 
-    // Re-checked after the push: the payload may itself have been what put the
-    // parent in the store, and it arrived carrying a fresh count of its own.
-    if (!parent) return result;
-
-    parent.pushAttributes({
-      tributaryReplyCount: (parent.tributaryReplyCount() || 0) + 1,
-    });
+      post.pushAttributes({
+        tributaryReplyCount: (post.tributaryReplyCount() || 0) + 1,
+      });
+    }
 
     return result;
   });
