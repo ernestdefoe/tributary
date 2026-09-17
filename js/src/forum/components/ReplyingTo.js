@@ -13,29 +13,38 @@ export default class ReplyingTo extends Component {
   oninit(vnode) {
     super.oninit(vnode);
 
-    this.parent = null;
     this.failed = false;
+
+    /*
+     * 🚨 Looked up in the STORE first, and in `oninit`, not `oncreate`.
+     *
+     * The store is usually enough: the parent is nearly always another post on
+     * the same page, already loaded by the post stream. Fetching
+     * unconditionally would put one request per threaded post on every page
+     * load — the surest way to make a forum feel slower the moment this is
+     * installed.
+     *
+     * 🚨 And it has to happen BEFORE the first render. This ran in `oncreate`,
+     * which Mithril calls after the view has already been drawn, and the
+     * store-hit path set `this.parent` and returned WITHOUT a redraw — so the
+     * component kept drawing its loading state until something unrelated
+     * happened to redraw the page. On a quiet discussion nothing ever did, and
+     * the spinner simply stayed there for ever. Reading the store in `oninit`
+     * means the common case renders correctly the first time and never shows a
+     * spinner at all.
+     */
+    const id = String(this.attrs.post.tributaryParentId());
+
+    this.parent = app.store.getById('posts', id) || null;
   }
 
   oncreate(vnode) {
     super.oncreate(vnode);
 
+    // Already had it from the store; nothing to fetch and nothing to redraw.
+    if (this.parent) return;
+
     const id = String(this.attrs.post.tributaryParentId());
-
-    /*
-     * 🚨 Looked up in the STORE first, and the store is usually enough: the
-     * parent is nearly always another post on the same page, already loaded by
-     * the post stream. Fetching unconditionally would put one request per
-     * threaded post on every page load — the surest way to make a forum feel
-     * slower the moment this is installed.
-     */
-    const known = app.store.getById('posts', id);
-
-    if (known) {
-      this.parent = known;
-
-      return;
-    }
 
     app.store
       .find('posts', id)
