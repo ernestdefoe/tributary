@@ -6,7 +6,7 @@ was answering without rebuilding the post stream as a tree.
 Every entry links to its full release notes, which carry the reasoning and, for
 the bugs, what actually went wrong.
 
-## [Unreleased]
+## [v1.0.6] — 2026-09-19
 
 Four pieces of review from **@ClaudiusH**, all of them right.
 
@@ -56,6 +56,23 @@ Four pieces of review from **@ClaudiusH**, all of them right.
   attribute into anything but `content` is CSS Values 5, and Safari has it
   only in Technology Preview — the indent would simply not happen on an
   iPhone.
+
+## [v1.0.5] — 2026-09-17
+
+**The "in reply to" line showed a spinner that never resolved.** Reported by
+**@ClaudiusH**.
+
+### Fixed
+
+- The parent post was looked up in the store from `oncreate`, which runs after
+  the first render, and that path returned without asking for a redraw — so
+  the component kept drawing its loading state until something unrelated
+  redrew the page. On a quiet discussion nothing ever did.
+
+  The lookup happens in `oninit` now, before the first draw, so a parent
+  already on the page renders immediately and never shows a spinner at all.
+  Only a real fetch reaches the loading state, and that path always redrew
+  correctly.
 
 ## [v1.0.4] — 2026-09-16
 
@@ -193,6 +210,8 @@ can actually see — both enforced on the server whatever the browser sends.
 Deleting a post does **not** delete the replies to it: the answers usually
 outlive the question.
 
+[v1.0.6]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.6
+[v1.0.5]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.5
 [v1.0.4]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.4
 [v1.0.3]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.3
 [v1.0.2]: https://github.com/ernestdefoe/tributary/releases/tag/v1.0.2
