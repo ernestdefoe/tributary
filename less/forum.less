@@ -111,8 +111,44 @@
   }
 }
 
+/*
+ * 🚨 A real list, so a screen reader says "5 items" before reading them.
+ * Reported by ClaudiusH. The markers and the indent a <ul> brings with it
+ * have to go, or every reply gains a bullet and 40px of padding that the
+ * depth rules below then add to.
+ */
 .Tributary-branchList {
+  list-style: none;
   margin: 8px 0 0;
+  padding: 0;
+}
+
+/*
+ * 🚨 The depth cap, and it must match Parentage::MAX_DEPTH.
+ *
+ * BranchController already clamps every row to it, so a row deeper than
+ * this cannot reach the browser — but if the PHP constant is ever raised
+ * without raising this, the extra levels quietly stop indenting rather
+ * than erroring, which is the failure that takes an afternoon to notice.
+ */
+@tributary-max-depth: 6;
+
+/*
+ * 🚨 Guarded recursion, NOT `each(range(...))`.
+ *
+ * Flarum compiles this with wikimedia/less.php, not the Node compiler, and
+ * that library's Functions.php has no `range` — `each()` arrived in Less
+ * 3.7 and the PHP port is behind. A mixin it cannot resolve does not raise
+ * anything a developer sees: the rule is dropped and the stylesheet ships
+ * without the indent, which is this project's own recorded way of losing an
+ * afternoon. The recursive form is Less 1.x and compiles anywhere.
+ */
+.tributary-indent(@step; @i: 1) when (@i =< @tributary-max-depth) {
+  &[data-depth="@{i}"] {
+    margin-left: (@i - 1) * @step;
+  }
+
+  .tributary-indent(@step; @i + 1);
 }
 
 .Tributary-branchLoading,
@@ -123,12 +159,22 @@
 }
 
 /*
- * One reply. The indent is driven entirely by --tributary-depth, set inline,
- * so there is no per-level selector to keep in step with the depth cap.
+ * One reply, indented by how deep it sits.
+ *
+ * 🚨 Driven by `data-depth`, not an inline style. ClaudiusH asked for the
+ * attribute and suggested reading it back with `attr(data-depth)`, which
+ * would be the tidy answer and is not usable yet: `attr()` outside the
+ * `content` property is CSS Values 5, and Safari has it only in Technology
+ * Preview — so the indent would simply not happen on any iPhone, which is
+ * a worse outcome than an inline style.
+ *
+ * Six rules instead, generated below. That is not a guess at how deep a
+ * branch goes: BranchController clamps every row with
+ * `min($depth, Parentage::MAX_DEPTH)`, so six is the whole range, and the
+ * loop reads the same constant rather than repeating it.
  */
 .Tributary-reply {
   border-left: 2px solid var(--control-bg);
-  margin-left: ~"calc((var(--tributary-depth, 1) - 1) * 16px)";
   padding: 8px 0 8px 12px;
 
   & + .Tributary-reply {
@@ -142,6 +188,8 @@
   &:hover {
     border-left-color: var(--muted-color);
   }
+
+  .tributary-indent(16px);
 }
 
 .Tributary-replyHead {
@@ -216,6 +264,13 @@
  * the side arm comes back INTO the trunk — and a threading extension is
  * saying the opposite thing: the conversation divides as it goes down.
  * Reported by ClaudiusH on discuss.flarum.org, and he is right.
+ *
+ * 🚨 composer.json carries the same flip, as `fas fa-code-branch
+ * fa-flip-vertical`, so the extension's own icon in the admin list agrees
+ * with every place the glyph appears in the forum. He reported that too.
+ * A class rather than a rule because this extension ships no admin bundle,
+ * and Flarum passes `extra.flarum-extension.icon.name` straight through to
+ * the icon's class list — `.fa-flip-vertical` is already in admin.css.
  */
 .Tributary-branchIcon,
 .Tributary-replyButton .Button-icon {
@@ -280,8 +335,9 @@
   // 🚨 Half the indent on a phone. At 16px a sixth-level reply starts eighty
   // pixels in, which on a narrow screen leaves a column too thin to read.
   .Tributary-reply {
-    margin-left: ~"calc((var(--tributary-depth, 1) - 1) * 8px)";
     padding-left: 8px;
+
+    .tributary-indent(8px);
   }
 
   // Core stacks the header items into full-width rows on a phone, each with

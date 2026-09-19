@@ -6,6 +6,7 @@ import Post from 'flarum/common/models/Post';
 import DiscussionControls from 'flarum/forum/utils/DiscussionControls';
 import extractText from 'flarum/common/utils/extractText';
 import watchForReplies from './watchForReplies';
+import isBlogArticle from './isBlogArticle';
 
 import BranchPanel from './components/BranchPanel';
 import ReplyingTo from './components/ReplyingTo';
@@ -47,6 +48,18 @@ app.initializers.add('ernestdefoe-tributary', () => {
     const discussion = post.discussion();
 
     if (!discussion || !discussion.canReply()) return;
+
+    /*
+     * 🚨 Not on the article of a blog post — only on its comments.
+     *
+     * The first post of a fof/blog article is the article itself, and every
+     * comment under it already answers it, so threading a reply to it
+     * records a parent that tells nobody anything. Reported by ClaudiusH.
+     *
+     * Deliberately narrow: the first post of an ordinary discussion is a
+     * perfectly good thing to answer, and this leaves it alone.
+     */
+    if (post.number() === 1 && isBlogArticle(discussion)) return;
 
     items.add(
       'tributaryReply',

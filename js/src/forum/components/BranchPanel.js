@@ -69,10 +69,22 @@ export default class BranchPanel extends Component {
       return <div className="Tributary-branchEmpty">{app.translator.trans('ernestdefoe-tributary.forum.branch_empty')}</div>;
     }
 
-    return (
-      <div className="Tributary-branchList">
+    /*
+      Who each reply is answering, for the line only a screen reader hears.
+
+      The rows are the whole branch in order, so a row's parent is almost
+      always another row; the exceptions are the direct answers to the post
+      this panel hangs off, whose parentId is 0. `present()` casts a null
+      parent through `(int)`, which is why that is 0 and not null.
+    */
+    const names = new Map(rows.map((row) => [row.id, row.user?.displayName]));
+    const deleted = app.translator.trans('core.lib.username.deleted_text');
+    const rootName = this.attrs.post.user()?.displayName() || deleted;
+
+    return [
+      <ul className="Tributary-branchList">
         {rows.map((row) => (
-          <div
+          <li
             className="Tributary-reply"
             key={row.id}
             /*
@@ -83,8 +95,30 @@ export default class BranchPanel extends Component {
               phone. A flat list that indents by a number is one element per
               reply, and the cap lives in one place.
             */
-            style={`--tributary-depth: ${row.depth}`}
+            data-depth={row.depth}
           >
+            {/*
+              🚨 The depth is spoken, not inferred from the indent.
+              Reported by ClaudiusH, who asked for it on the element; it is
+              here as text because there is nowhere valid to put it as an
+              attribute. `aria-level` is defined only for heading, row,
+              comment and associationlistitemkey — NOT listitem — so putting
+              it on an <li> is invalid ARIA that most screen readers ignore
+              and a validator flags. `aria-description` is better supported
+              in Chrome than anywhere else.
+
+              A visually hidden line needs no ARIA support at all, and it
+              can carry the fact that actually helps: a bare "level 3" says
+              little, while the name of the person being answered is the
+              thing the indent is drawing.
+            */}
+            <span className="sr-only">
+              {app.translator.trans('ernestdefoe-tributary.forum.reply_context', {
+                depth: row.depth,
+                username: (row.parentId && names.get(row.parentId)) || rootName,
+              })}
+            </span>
+
             <div className="Tributary-replyHead">
               {/*
                 🚨 Hand-rolled, NOT core's avatar() and humanTime() helpers.
@@ -118,16 +152,22 @@ export default class BranchPanel extends Component {
             </div>
 
             <div className="Tributary-replyBody Post-body" oncreate={(v) => this.paint(v, row)} />
-          </div>
+          </li>
         ))}
+      </ul>,
 
-        {hasMore ? (
-          <Button className="Button Button--link Tributary-more" loading={loading} onclick={() => this.load(true)}>
-            {app.translator.trans('ernestdefoe-tributary.forum.load_more')}
-          </Button>
-        ) : null}
-      </div>
-    );
+      /*
+        🚨 OUTSIDE the list. A <ul> may only contain <li>, <script> and
+        <template>, so leaving the "show more" button where it was — a
+        direct child of the list — would be invalid HTML the moment the
+        container stopped being a <div>.
+      */
+      hasMore ? (
+        <Button className="Button Button--link Tributary-more" loading={loading} onclick={() => this.load(true)}>
+          {app.translator.trans('ernestdefoe-tributary.forum.load_more')}
+        </Button>
+      ) : null,
+    ];
   }
 
   /**

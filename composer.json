@@ -24,7 +24,7 @@
             "title": "Tributary",
             "category": "feature",
             "icon": {
-                "name": "fas fa-code-branch",
+                "name": "fas fa-code-branch fa-flip-vertical",
                 "backgroundColor": "#0e7490",
                 "color": "#fff"
             }

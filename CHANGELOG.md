@@ -6,6 +6,57 @@ was answering without rebuilding the post stream as a tree.
 Every entry links to its full release notes, which carry the reasoning and, for
 the bugs, what actually went wrong.
 
+## [Unreleased]
+
+Four pieces of review from **@ClaudiusH**, all of them right.
+
+### Fixed
+
+- **"Reply in thread" was offered on a blog article itself.** On a
+  FriendsOfFlarum blog post the first post IS the article, and every comment
+  under it already answers it — so threading a reply to it recorded a parent
+  that told nobody anything, and put a threading control on a piece of writing
+  rather than on a remark. It is now offered on the comments only.
+
+  The test is fof/blog's own: a discussion carrying one of the configured blog
+  tags, or a child of one, which is how that extension decides where a
+  discussion's URL points. Two details came with it — `tags()` returns `false`
+  rather than an empty array when the relationship is not loaded, and a tag's
+  PARENT counts, for forums with a "Blog" parent and a child per topic. With
+  fof/blog absent the check is false and nothing changes.
+
+- **The extension's own icon now matches the one in the forum.** v1.0.1
+  flipped the branch glyph vertically, because Font Awesome draws
+  `code-branch` as a merge and a threading extension means the opposite; the
+  icon in the admin extension list kept pointing the old way.
+
+### Changed
+
+- **The branch is a real list.** `<ul>` and `<li>` rather than nested `<div>`
+  elements, so a screen reader announces how many replies there are before
+  reading them. The "show more" button moved out of the list, since a `<ul>`
+  may only contain list items.
+
+- **Each reply says how deep it is, out loud.** The indent draws the shape of
+  a branch for anybody who can see it and nothing for anybody who cannot, so
+  every row now carries a visually hidden line naming its level and who it
+  answers.
+
+  Not `aria-level`: that is defined for `heading`, `row`, `comment` and
+  `associationlistitemkey`, and NOT for `listitem`, so on an `<li>` it is
+  invalid ARIA that most screen readers ignore. Text needs no support at all,
+  and can carry the fact that helps more than a number — the name of the
+  person being answered.
+
+- **The indent is driven by `data-depth`, not an inline style.** Six rules,
+  generated from the same cap the server clamps to, so there is nothing to
+  keep in step by hand.
+
+  Not `attr(data-depth)`, which was the tidier suggestion: reading an
+  attribute into anything but `content` is CSS Values 5, and Safari has it
+  only in Technology Preview — the indent would simply not happen on an
+  iPhone.
+
 ## [v1.0.4] — 2026-09-16
 
 **A nested reply only updated the post it answered.** Reported by **@ClaudiusH**.
