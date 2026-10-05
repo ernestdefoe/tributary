@@ -1,6 +1,7 @@
 import app from 'flarum/forum/app';
 import Component from 'flarum/common/Component';
 import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
+import { findParent } from '../parents';
 
 /**
  * "In reply to <somebody>" above a post, linking up to the post it answered.
@@ -46,8 +47,7 @@ export default class ReplyingTo extends Component {
 
     const id = String(this.attrs.post.tributaryParentId());
 
-    app.store
-      .find('posts', id)
+    findParent(id)
       .then((post) => {
         this.parent = post;
         m.redraw();

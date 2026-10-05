@@ -29,18 +29,43 @@ use Flarum\User\User;
  */
 class ReplyCounts
 {
-    /** @var array<int, array<int, int>> discussion id => [post id => replies beneath it] */
-    private array $byDiscussion = [];
+    /**
+     * discussion + actor => [post id => replies beneath it], per request.
+     *
+     * 🚨 Static, and keyed by the REQUEST object. The field getter reaches
+     * this through resolve(), and an unbound class resolves to a NEW instance
+     * every time — so an instance property memoised nothing and every post
+     * still ran its own query (20 posts, 20 queries). A WeakMap on the request
+     * lives exactly as long as the response being built: nothing leaks into
+     * the next job of a long-running queue worker, and a sub-request made as a
+     * different actor gets its own counts.
+     *
+     * @var \WeakMap<object, array<string, array<int, int>>>|null
+     */
+    private static ?\WeakMap $memo = null;
 
-    public function for(Post $post, User $actor): int
+    /** @var array<string, array<int, int>> for callers with no request */
+    private array $local = [];
+
+    public function for(Post $post, User $actor, ?object $request = null): int
     {
-        $discussionId = (int) $post->discussion_id;
+        $key = (int) $post->discussion_id.':'.(int) $actor->id;
 
-        if (! isset($this->byDiscussion[$discussionId])) {
-            $this->byDiscussion[$discussionId] = $this->load($discussionId, $actor);
+        if ($request === null) {
+            $counts = $this->local[$key] ??= $this->load((int) $post->discussion_id, $actor);
+        } else {
+            self::$memo ??= new \WeakMap();
+            $forRequest = self::$memo[$request] ?? [];
+
+            if (! isset($forRequest[$key])) {
+                $forRequest[$key] = $this->load((int) $post->discussion_id, $actor);
+                self::$memo[$request] = $forRequest;
+            }
+
+            $counts = $forRequest[$key];
         }
 
-        return (int) ($this->byDiscussion[$discussionId][(int) $post->id] ?? 0);
+        return (int) ($counts[(int) $post->id] ?? 0);
     }
 
     /**

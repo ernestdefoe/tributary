@@ -65,7 +65,7 @@ return [
              */
             Schema\Integer::make('tributaryReplyCount')
                 ->get(fn (Post $post, Context $context) => resolve(ReplyCounts::class)
-                    ->for($post, $context->getActor())),
+                    ->for($post, $context->getActor(), $context->request)),
         ]),
 
     (new Extend\Routes('api'))

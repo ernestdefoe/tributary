@@ -54,8 +54,12 @@ class BranchController implements RequestHandlerInterface
         $more = count($slice) > self::PER_PAGE;
         $slice = array_slice($slice, 0, self::PER_PAGE);
 
+        // 🚨 Rendered AFTER the page is cut, never before. Rendering is the
+        // expensive part — the formatter and the edit check run per post — and
+        // presenting the whole branch first meant a 400-reply branch rendered
+        // 400 posts to send 50.
         return new JsonResponse([
-            'data' => array_map(fn (array $row) => $row, $slice),
+            'data' => array_map(fn (array $row) => $this->present($row[0], $row[1], $actor), $slice),
             'hasMore' => $more,
             'page' => $page,
             'total' => count($rows),
@@ -76,7 +80,7 @@ class BranchController implements RequestHandlerInterface
      * into a hundred queries, and depth is capped so a cycle in the data
      * cannot spin here.
      *
-     * @return list<array<string, mixed>>
+     * @return list<array{0: Post, 1: int}> each post with its depth, in reading order
      */
     private function descendants(Post $root, User $actor): array
     {
@@ -97,6 +101,13 @@ class BranchController implements RequestHandlerInterface
             }
 
             foreach ($posts as $post) {
+                // Every reply in a branch is in the root's discussion, so they
+                // share its ONE model: the edit check reads the discussion and
+                // its tags, and a lazy load per post was two queries each.
+                if ((int) $post->discussion_id === (int) $root->discussion_id) {
+                    $post->setRelation('discussion', $root->discussion);
+                }
+
                 $children[(int) $post->tributary_parent_id][] = $post;
             }
 
@@ -105,9 +116,9 @@ class BranchController implements RequestHandlerInterface
 
         // Walk it back into the order a person reads: each reply, then
         // everything said in answer to that reply, before the next sibling.
-        $walk = function (int $parentId, int $depth) use (&$walk, &$ordered, $children, $actor) {
+        $walk = function (int $parentId, int $depth) use (&$walk, &$ordered, $children) {
             foreach ($children[$parentId] ?? [] as $post) {
-                $ordered[] = $this->present($post, $depth, $actor);
+                $ordered[] = [$post, $depth];
                 $walk((int) $post->id, $depth + 1);
             }
         };
