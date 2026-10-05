@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Tributary;
 
 use Flarum\Api\Context;
+use Flarum\Api\Resource\DiscussionResource;
 use Flarum\Api\Resource\PostResource;
 use Flarum\Api\Schema;
 use Flarum\Extend;
@@ -64,6 +65,14 @@ return [
              * back, and nothing in the composer sends a reply count.
              */
             Schema\Integer::make('tributaryReplyCount')
+                /*
+                 * 🚨 Not on the discussion LIST. Its first, last and most
+                 * relevant posts come from twenty different discussions, and
+                 * the counts are loaded per discussion, so the list paid one
+                 * reply-tree query per row for a number nothing there shows.
+                 * The thread's own request carries the counts its stream uses.
+                 */
+                ->visible(fn (Post $post, Context $context) => ! $context->listing(DiscussionResource::class))
                 ->get(fn (Post $post, Context $context) => resolve(ReplyCounts::class)
                     ->for($post, $context->getActor(), $context->request)),
         ]),
