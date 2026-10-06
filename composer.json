@@ -10,6 +10,9 @@
             "email": "ernestdefoe@gmail.com"
         }
     ],
+    "support": {
+        "forum": "https://discuss.flarum.org/d/39856-tributary-branching-replies-for-flarum-2-built-using-ai"
+    },
     "require": {
         "php": "^8.3",
         "flarum/core": "^2.0"
