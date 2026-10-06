@@ -93,6 +93,10 @@ Nothing to configure. There are no settings, because there is nothing here an ad
 
 Flarum **2.0+**, PHP **8.3+**. No dependency on any other extension — `tributary:backfill` reads flarum/mentions' table if it is there and says so plainly if it is not.
 
+## Discuss
+
+Questions, ideas and release notes: [Tributary on discuss.flarum.org](https://discuss.flarum.org/d/39856-tributary-branching-replies-for-flarum-2-built-using-ai).
+
 ## Licence
 
 [MIT](LICENSE).
