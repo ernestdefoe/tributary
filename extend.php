@@ -52,7 +52,7 @@ return [
                         return;
                     }
 
-                    $post->tributary_parent_id = $parentId;
+                    $post->setAttribute('tributary_parent_id', $parentId);
                     $post->save();
                 }),
 

@@ -4,6 +4,7 @@ namespace ErnestDefoe\Tributary\Api\Controller;
 
 use ErnestDefoe\Tributary\Parentage;
 use Flarum\Http\RequestUtil;
+use Flarum\Post\CommentPost;
 use Flarum\Post\Post;
 use Flarum\User\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -31,10 +32,6 @@ class BranchController implements RequestHandlerInterface
      * reader goes.
      */
     private const PER_PAGE = 50;
-
-    public function __construct(private Parentage $parentage)
-    {
-    }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -80,7 +77,7 @@ class BranchController implements RequestHandlerInterface
      * into a hundred queries, and depth is capped so a cycle in the data
      * cannot spin here.
      *
-     * @return list<array{0: Post, 1: int}> each post with its depth, in reading order
+     * @return list<array{0: CommentPost, 1: int}> each post with its depth, in reading order
      */
     private function descendants(Post $root, User $actor): array
     {
@@ -89,7 +86,10 @@ class BranchController implements RequestHandlerInterface
         $children = [];
 
         for ($depth = 1; $depth <= Parentage::MAX_DEPTH && $level; $depth++) {
-            $posts = Post::query()
+            // Comments only: an event post ("renamed the discussion") has no
+            // content to render and can never be anyone's reply.
+            $posts = CommentPost::query()
+                ->where('type', CommentPost::$type)
                 ->whereVisibleTo($actor)
                 ->whereIn('tributary_parent_id', $level)
                 ->with('user')
@@ -108,7 +108,7 @@ class BranchController implements RequestHandlerInterface
                     $post->setRelation('discussion', $root->discussion);
                 }
 
-                $children[(int) $post->tributary_parent_id][] = $post;
+                $children[(int) $post->getAttribute('tributary_parent_id')][] = $post;
             }
 
             $level = $posts->map(fn (Post $p) => (int) $p->id)->all();
@@ -131,13 +131,13 @@ class BranchController implements RequestHandlerInterface
     /**
      * @return array<string, mixed>
      */
-    private function present(Post $post, int $depth, User $actor): array
+    private function present(CommentPost $post, int $depth, User $actor): array
     {
         return [
             'id' => (int) $post->id,
             'number' => (int) $post->number,
             'depth' => min($depth, Parentage::MAX_DEPTH),
-            'parentId' => (int) $post->tributary_parent_id,
+            'parentId' => (int) $post->getAttribute('tributary_parent_id'),
             'createdAt' => $post->created_at?->toIso8601String(),
 
             /*

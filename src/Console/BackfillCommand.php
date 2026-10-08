@@ -100,7 +100,7 @@ class BackfillCommand extends AbstractCommand
             $matched++;
 
             if (! $dry) {
-                $post->tributary_parent_id = (int) $parent->id;
+                $post->setAttribute('tributary_parent_id', (int) $parent->id);
                 $post->save();
             }
 
