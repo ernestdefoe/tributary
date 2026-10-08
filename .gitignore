@@ -4,3 +4,5 @@ vendor
 composer.lock
 .DS_Store
 /js/package-lock.json
+.phpunit.result.cache
+/tests/integration/tmp
