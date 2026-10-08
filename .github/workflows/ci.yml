@@ -1,6 +1,7 @@
-# The thing in this repo that can drift silently is the committed JS bundle:
-# it is what forums actually load, and nothing rebuilds it on install. The
-# composer manifest is checked alongside it.
+# What the shared Flarum workflows (backend.yml, frontend.yml) don't check:
+# that composer.json is valid, the JS unit tests, and that the committed JS
+# bundle — what forums actually load, never rebuilt on install — matches a
+# fresh build of js/src.
 
 name: CI
 
@@ -14,8 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  php:
-    name: PHP
+  composer:
+    name: composer.json
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,11 +28,6 @@ jobs:
 
       - name: Validate composer.json
         run: composer validate --strict
-
-      - name: Lint every PHP file
-        run: |
-          set -e
-          find src migrations extend.php -name '*.php' -print0             | xargs -0 -n1 php -l
 
   js:
     name: JS bundle
@@ -45,7 +41,7 @@ jobs:
 
       - name: Install
         working-directory: js
-        run: npm install --no-audit --no-fund
+        run: npm ci
 
       # 🚨 The reply-count arithmetic. Every way it can be wrong renders
       # perfectly — the panel opens, the replies inside it are right, and only
