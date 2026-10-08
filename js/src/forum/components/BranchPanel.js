@@ -134,15 +134,10 @@ export default class BranchPanel extends Component {
               {row.user?.avatarUrl ? (
                 <img className="Tributary-replyAvatar" src={row.user.avatarUrl} alt="" />
               ) : (
-                <span className="Tributary-replyAvatar Tributary-replyAvatar--blank">
-                  {(row.user?.displayName || '?').charAt(0).toUpperCase()}
-                </span>
+                <span className="Tributary-replyAvatar Tributary-replyAvatar--blank">{(row.user?.displayName || '?').charAt(0).toUpperCase()}</span>
               )}
 
-              <a
-                className="Tributary-replyAuthor"
-                href={row.user ? app.route('user', { username: row.user.username }) : '#'}
-              >
+              <a className="Tributary-replyAuthor" href={row.user ? app.route('user', { username: row.user.username }) : '#'}>
                 {row.user ? row.user.displayName : app.translator.trans('core.lib.username.deleted_text')}
               </a>
 

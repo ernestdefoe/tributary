@@ -177,7 +177,5 @@ function reply(post) {
 
   setParent(discussion.id(), post.id(), post.user()?.displayName());
 
-  return DiscussionControls.replyAction
-    .call(discussion, true)
-    .catch(() => clearParent());
+  return DiscussionControls.replyAction.call(discussion, true).catch(() => clearParent());
 }
