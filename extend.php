@@ -22,7 +22,7 @@ return [
     (new Extend\ApiResource(PostResource::class))
         ->fields(fn () => [
             /*
-             * 🚨 `writableOnCreate()`, and the SAVER is the single writer.
+             * 🚨 `writableOnCreate()`, and a SETTER that validates.
              *
              * Two separate traps meet here.
              *
@@ -31,12 +31,15 @@ return [
              * every reply anybody posts. So declaring it read-only just to get
              * it serialised would break posting outright.
              *
-             * And `->save()` rather than `->set()` because a saver both
-             * suppresses the default property assignment (so an unvalidated
-             * id can never reach the column) AND runs after the post exists —
-             * which is the only moment `discussion_id` is reliably populated,
-             * and the same-discussion check is the one that keeps a reply from
-             * pointing at a post in a conversation the writer cannot see.
+             * And `->set()` with the check inside it, because a setter runs
+             * BEFORE the post is saved. It used to be a saver, which runs
+             * after: a refused parent then answered 422 while the reply had
+             * already been posted, so the writer saw an error, tried again,
+             * and posted twice. The custom setter also replaces the default
+             * property assignment, so an unvalidated id never reaches the
+             * column. `discussion_id` is already set by then (core's
+             * discussion relationship is set first), which the
+             * same-discussion check needs.
              *
              * There is no `creating()` on this extender; that method does not
              * exist.
@@ -45,15 +48,11 @@ return [
                 ->property('tributary_parent_id')
                 ->nullable()
                 ->writableOnCreate()
-                ->save(function (Post $post, mixed $value, Context $context) {
-                    $parentId = resolve(Parentage::class)->resolve($value, $post, $context->getActor());
-
-                    if ($parentId === null) {
-                        return;
-                    }
-
-                    $post->setAttribute('tributary_parent_id', $parentId);
-                    $post->save();
+                ->set(function (Post $post, mixed $value, Context $context) {
+                    $post->setAttribute(
+                        'tributary_parent_id',
+                        resolve(Parentage::class)->resolve($value, $post, $context->getActor())
+                    );
                 }),
 
             /*
