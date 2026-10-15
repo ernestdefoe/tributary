@@ -3,6 +3,7 @@
 namespace ErnestDefoe\Tributary;
 
 use Flarum\Foundation\ValidationException;
+use Flarum\Locale\TranslatorInterface;
 use Flarum\Post\Post;
 use Flarum\User\User;
 
@@ -26,6 +27,11 @@ class Parentage
      */
     public const MAX_DEPTH = 6;
 
+    public function __construct(
+        protected TranslatorInterface $translator
+    ) {
+    }
+
     /**
      * Validate a proposed parent and return its id, or null for "no parent".
      *
@@ -38,13 +44,13 @@ class Parentage
         }
 
         if (! is_numeric($parentId)) {
-            throw new ValidationException(['tributaryParentId' => 'That is not a post.']);
+            throw new ValidationException(['tributaryParentId' => $this->translator->trans('ernestdefoe-tributary.api.parent_not_post')]);
         }
 
         $parent = Post::query()->find((int) $parentId);
 
         if (! $parent) {
-            throw new ValidationException(['tributaryParentId' => 'That post is not here any more.']);
+            throw new ValidationException(['tributaryParentId' => $this->translator->trans('ernestdefoe-tributary.api.parent_gone')]);
         }
 
         /*
@@ -54,7 +60,7 @@ class Parentage
          * else inside this one — a visibility hole dressed up as a feature.
          */
         if ((int) $parent->discussion_id !== (int) $reply->discussion_id) {
-            throw new ValidationException(['tributaryParentId' => 'A reply can only answer a post in the same discussion.']);
+            throw new ValidationException(['tributaryParentId' => $this->translator->trans('ernestdefoe-tributary.api.parent_other_discussion')]);
         }
 
         /*
@@ -63,7 +69,7 @@ class Parentage
          * parent — the reply would advertise its existence for ever.
          */
         if (! $parent->isVisibleTo($actor)) {
-            throw new ValidationException(['tributaryParentId' => 'That post is not available.']);
+            throw new ValidationException(['tributaryParentId' => $this->translator->trans('ernestdefoe-tributary.api.parent_unavailable')]);
         }
 
         return (int) $parent->id;

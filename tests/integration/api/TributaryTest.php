@@ -4,6 +4,7 @@ namespace ErnestDefoe\Tributary\Tests\integration\api;
 
 use Carbon\Carbon;
 use Flarum\Discussion\Discussion;
+use Flarum\Locale\TranslatorInterface;
 use Flarum\Post\Post;
 use Flarum\Testing\integration\RetrievesAuthorizedUsers;
 use Flarum\Testing\integration\TestCase;
@@ -119,11 +120,14 @@ class TributaryTest extends TestCase
     {
         // As a member: post 5 is hidden from them.
         $cases = [
-            20 => 'A reply can only answer a post in the same discussion.',
-            999 => 'That post is not here any more.',
-            5 => 'That post is not available.',
+            20 => 'parent_other_discussion',
+            999 => 'parent_gone',
+            5 => 'parent_unavailable',
             'abc' => null,
         ];
+        // The message is whatever the translator makes of the key (the test
+        // install has no language pack, so it can be the key itself).
+        $translator = $this->app()->getContainer()->make(TranslatorInterface::class);
 
         foreach ($cases as $parent => $why) {
             [$status, $body] = $this->reply($parent, 2);
@@ -131,7 +135,7 @@ class TributaryTest extends TestCase
             $this->assertSame(422, $status, (string) $parent);
             $this->assertSame('/data/attributes/tributaryParentId', $body['errors'][0]['source']['pointer'] ?? null, (string) $parent);
             if ($why) {
-                $this->assertSame($why, $body['errors'][0]['detail'], (string) $parent);
+                $this->assertSame($translator->trans('ernestdefoe-tributary.api.'.$why), $body['errors'][0]['detail'], (string) $parent);
             }
         }
 
