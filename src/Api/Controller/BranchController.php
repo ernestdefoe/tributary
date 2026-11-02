@@ -42,6 +42,8 @@ class BranchController implements RequestHandlerInterface
         $root = Post::query()->whereVisibleTo($actor)->find($rootId);
 
         if (! $root) {
+            // Bubbles to the API pipeline's HandleErrors middleware, which
+            // answers with the standard JSON:API `errors` 404 (tested).
             throw new ModelNotFoundException();
         }
 

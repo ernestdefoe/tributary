@@ -38,7 +38,10 @@ class ReplyCounts
      * still ran its own query (20 posts, 20 queries). A WeakMap on the request
      * lives exactly as long as the response being built: nothing leaks into
      * the next job of a long-running queue worker, and a sub-request made as a
-     * different actor gets its own counts.
+     * different actor gets its own counts. Under Octane/FrankenPHP the same
+     * holds: an entry is only ever read through its own request object, so
+     * even a request something wrongly retains cannot hand its counts to
+     * another request or user — it just keeps its own small array alive.
      *
      * @var \WeakMap<object, array<string, array<int, int>>>|null
      */

@@ -206,8 +206,9 @@ class TributaryTest extends TestCase
         [$status] = $this->branch(5, 2);
         $this->assertSame(404, $status, 'A hidden post');
 
-        [$status] = $this->branch(999);
+        [$status, $body] = $this->branch(999);
         $this->assertSame(404, $status);
+        $this->assertSame('not_found', $body['errors'][0]['code'] ?? null, 'The standard JSON:API error envelope');
     }
 
     #[Test]
@@ -232,5 +233,38 @@ class TributaryTest extends TestCase
         [, $body] = $this->branch(6, null, 1);
         $this->assertSame(range(150, 159), array_column($body['data'], 'id'));
         $this->assertFalse($body['hasMore']);
+    }
+
+    #[Test]
+    public function backfill_links_older_posts_from_mentions_in_a_few_queries_per_chunk()
+    {
+        // post_mentions_post is created by tests/integration/setup.php.
+        $this->app();
+
+        $rows = [];
+        $mentions = [];
+        for ($id = 200; $id < 260; $id++) {
+            $rows[] = ['id' => $id, 'discussion_id' => 1, 'number' => $id, 'created_at' => Carbon::now(), 'user_id' => 2, 'type' => 'comment', 'content' => '<t><p>x</p></t>'];
+            $mentions[] = ['post_id' => $id, 'mentions_post_id' => 6];
+            $mentions[] = ['post_id' => $id, 'mentions_post_id' => 4]; // the earliest mention wins
+        }
+        $this->database()->table('posts')->insert($rows);
+        $mentions[] = ['post_id' => 20, 'mentions_post_id' => 1];  // another discussion: refused
+        $mentions[] = ['post_id' => 6, 'mentions_post_id' => 200]; // written after it: refused
+        $mentions[] = ['post_id' => 3, 'mentions_post_id' => 1];   // already has a parent: untouched
+        $this->database()->table('post_mentions_post')->insert($mentions);
+
+        $command = $this->app()->getContainer()->make(\ErnestDefoe\Tributary\Console\BackfillCommand::class);
+        $output = new \Symfony\Component\Console\Output\BufferedOutput();
+
+        $queries = $this->queriesOf(fn () => $command->run(new \Symfony\Component\Console\Input\ArrayInput([]), $output));
+
+        $this->assertLessThan(15, count($queries), 'A few queries per chunk, not two per post');
+        $this->assertStringContainsString('Linked 60 of', $output->fetch());
+        $parents = $this->database()->table('posts')->pluck('tributary_parent_id', 'id');
+        $this->assertSame(60, $parents->filter(fn ($p) => (int) $p === 4)->count());
+        $this->assertNull($parents[20]);
+        $this->assertNull($parents[6]);
+        $this->assertSame(2, (int) $parents[3]);
     }
 }

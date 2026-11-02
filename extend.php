@@ -8,6 +8,7 @@ use Flarum\Api\Resource\PostResource;
 use Flarum\Api\Schema;
 use Flarum\Extend;
 use Flarum\Post\Post;
+use Illuminate\Support\Arr;
 
 return [
     (new Extend\Frontend('forum'))
@@ -37,9 +38,10 @@ return [
              * already been posted, so the writer saw an error, tried again,
              * and posted twice. The custom setter also replaces the default
              * property assignment, so an unvalidated id never reaches the
-             * column. `discussion_id` is already set by then (core's
-             * discussion relationship is set first), which the
-             * same-discussion check needs.
+             * column. The same-discussion check is handed the discussion id
+             * explicitly — from the model if core has set it, else from the
+             * request body core itself reads it from — so it never depends
+             * on the order fields are applied in.
              *
              * There is no `creating()` on this extender; that method does not
              * exist.
@@ -51,7 +53,12 @@ return [
                 ->set(function (Post $post, mixed $value, Context $context) {
                     $post->setAttribute(
                         'tributary_parent_id',
-                        resolve(Parentage::class)->resolve($value, $post, $context->getActor())
+                        resolve(Parentage::class)->resolve(
+                            $value,
+                            $post,
+                            $context->getActor(),
+                            (int) ($post->discussion_id ?: Arr::get($context->body(), 'data.relationships.discussion.data.id'))
+                        )
                     );
                 }),
 

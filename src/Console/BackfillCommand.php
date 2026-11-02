@@ -64,50 +64,67 @@ class BackfillCommand extends AbstractCommand
         $matched = 0;
         $skipped = 0;
 
-        foreach ($query->cursor() as $post) {
-            $considered++;
+        /*
+         * 🚨 A chunk at a time, three queries per chunk — never two per post.
+         * A cursor with a lookup inside it was ~200k round-trips on a 100k-post
+         * forum. By id, so rows this run fills in cannot shift the pages.
+         */
+        $query->select(['id', 'discussion_id'])->chunkById(500, function ($posts) use ($dry, &$considered, &$matched, &$skipped) {
+            $considered += $posts->count();
 
             /*
-             * The FIRST post it replied to, by id. A post that quotes three
-             * people has three rows here and no way to say which one it was
-             * answering; the earliest is the least surprising guess, and
+             * The FIRST post each one replied to, by id. A post that quotes
+             * three people has three rows here and no way to say which one it
+             * was answering; the earliest is the least surprising guess, and
              * guessing at all is why this is opt-in.
              */
-            $parentId = $this->db->table('post_mentions_post')
-                ->where('post_id', $post->id)
-                ->orderBy('mentions_post_id')
-                ->value('mentions_post_id');
+            $firstMention = $this->db->table('post_mentions_post')
+                ->whereIn('post_id', $posts->modelKeys())
+                ->groupBy('post_id')
+                ->selectRaw('post_id, min(mentions_post_id) as parent_id')
+                ->pluck('parent_id', 'post_id');
 
-            if (! $parentId) {
-                continue;
+            if ($firstMention->isEmpty()) {
+                return;
             }
 
-            $parent = Post::query()->find($parentId);
+            $parentDiscussion = Post::query()
+                ->whereIn('id', $firstMention->unique()->values())
+                ->pluck('discussion_id', 'id');
 
-            if (! $parent || (int) $parent->discussion_id !== (int) $post->discussion_id) {
-                $skipped++;
+            /** @var array<int, list<int>> $link parent id => post ids to point at it */
+            $link = [];
 
-                continue;
+            foreach ($posts as $post) {
+                $parentId = (int) ($firstMention[$post->id] ?? 0);
+
+                if (! $parentId) {
+                    continue;
+                }
+
+                // Same discussion only, and a post cannot answer something
+                // written after it.
+                if ((int) ($parentDiscussion[$parentId] ?? 0) !== (int) $post->discussion_id || $parentId >= (int) $post->id) {
+                    $skipped++;
+
+                    continue;
+                }
+
+                $link[$parentId][] = (int) $post->id;
+                $matched++;
+
+                if ($matched % 200 === 0) {
+                    $this->info("  … $matched so far");
+                }
             }
-
-            // A post cannot answer something written after it.
-            if ((int) $parent->id >= (int) $post->id) {
-                $skipped++;
-
-                continue;
-            }
-
-            $matched++;
 
             if (! $dry) {
-                $post->setAttribute('tributary_parent_id', (int) $parent->id);
-                $post->save();
+                foreach ($link as $parentId => $ids) {
+                    Post::query()->whereIn('id', $ids)->whereNull('tributary_parent_id')
+                        ->update(['tributary_parent_id' => $parentId]);
+                }
             }
-
-            if ($matched % 200 === 0) {
-                $this->info("  … $matched so far");
-            }
-        }
+        });
 
         $this->info(sprintf(
             '%s %d of %d post(s); %d mention(s) refused as implausible.',

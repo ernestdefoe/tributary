@@ -35,10 +35,15 @@ class Parentage
     /**
      * Validate a proposed parent and return its id, or null for "no parent".
      *
+     * $discussionId is the reply's discussion, passed in so the check never
+     * depends on whether core has filled `$reply->discussion_id` yet.
+     *
      * @throws ValidationException
      */
-    public function resolve(mixed $parentId, Post $reply, User $actor): ?int
+    public function resolve(mixed $parentId, Post $reply, User $actor, ?int $discussionId = null): ?int
     {
+        $discussionId ??= (int) $reply->discussion_id;
+
         if ($parentId === null || $parentId === '' || $parentId === 0 || $parentId === '0') {
             return null;
         }
@@ -59,7 +64,7 @@ class Parentage
          * the branch view would then happily render a post from somewhere
          * else inside this one — a visibility hole dressed up as a feature.
          */
-        if ((int) $parent->discussion_id !== (int) $reply->discussion_id) {
+        if ((int) $parent->discussion_id !== $discussionId) {
             throw new ValidationException(['tributaryParentId' => $this->translator->trans('ernestdefoe-tributary.api.parent_other_discussion')]);
         }
 
