@@ -162,4 +162,3 @@ app.initializers.add('ernestdefoe-tributary', () => {
   // evening of threads does not accumulate all of them in memory.
   extend('flarum/forum/components/DiscussionPage', 'onremove', () => forgetBranches());
 });
-

@@ -156,11 +156,7 @@ export default class BranchPanel extends Component {
                 for a forum that wants it shown only on hover.
               */}
               {canReply ? (
-                <button
-                  className="Tributary-nestedReply"
-                  type="button"
-                  onclick={() => reply(discussion, row.id, row.user?.displayName || deleted)}
-                >
+                <button className="Tributary-nestedReply" type="button" onclick={() => reply(discussion, row.id, row.user?.displayName || deleted)}>
                   <i className="fas fa-code-branch" aria-hidden="true" />
                   {app.translator.trans('ernestdefoe-tributary.forum.reply_to')}
                 </button>
