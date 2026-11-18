@@ -5,6 +5,7 @@ import LoadingIndicator from 'flarum/common/components/LoadingIndicator';
 import humanTime from 'flarum/common/helpers/humanTime';
 
 import { branchFor } from '../branches';
+import reply, { canReplyIn } from '../reply';
 
 /**
  * "3 replies" under a post, and the branch it opens.
@@ -80,6 +81,8 @@ export default class BranchPanel extends Component {
     const names = new Map(rows.map((row) => [row.id, row.user?.displayName]));
     const deleted = app.translator.trans('core.lib.username.deleted_text');
     const rootName = this.attrs.post.user()?.displayName() || deleted;
+    const discussion = this.attrs.post.discussion();
+    const canReply = canReplyIn(discussion);
 
     return [
       <ul className="Tributary-branchList">
@@ -144,6 +147,24 @@ export default class BranchPanel extends Component {
               <a className="Tributary-replyTime" href={this.permalink(row)}>
                 {humanTime(new Date(row.createdAt))}
               </a>
+
+              {/*
+                The post action's "Reply in thread", on the reply itself, so
+                answering one needs no trip to its permalink. Same function,
+                same composer. Visible by default and a plain button, so it
+                works on a phone; `.Tributary-nestedReply` is the stable hook
+                for a forum that wants it shown only on hover.
+              */}
+              {canReply ? (
+                <button
+                  className="Tributary-nestedReply"
+                  type="button"
+                  onclick={() => reply(discussion, row.id, row.user?.displayName || deleted)}
+                >
+                  <i className="fas fa-code-branch" aria-hidden="true" />
+                  {app.translator.trans('ernestdefoe-tributary.forum.reply_to')}
+                </button>
+              ) : null}
             </div>
 
             <div className="Tributary-replyBody Post-body" oncreate={(v) => this.paint(v, row)} />

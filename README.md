@@ -32,6 +32,14 @@ A reply action on every post that records the parent.
 
 It sits **alongside** Flarum's own Reply rather than replacing it — people who quote are not doing it wrong — and it is labelled differently on purpose, because two buttons a centimetre apart with the same word on them is a coin toss. While you write, the composer says which post you are answering, with one click to change your mind.
 
+Every reply inside an open branch carries the same **Reply in thread**, so you can answer any of them right there without opening its own page. It is visible by default (phones have no hover); a forum that wants it to appear only on hover can do that with its own CSS:
+
+```css
+.Tributary-reply .Tributary-nestedReply { opacity: 0; }
+.Tributary-reply:hover .Tributary-nestedReply,
+.Tributary-nestedReply:focus-visible { opacity: 1; }
+```
+
 ---
 
 ## What it deliberately does not do

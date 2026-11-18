@@ -3,14 +3,14 @@ import { extend, override } from 'flarum/common/extend';
 import Button from 'flarum/common/components/Button';
 import Model from 'flarum/common/Model';
 import Post from 'flarum/common/models/Post';
-import DiscussionControls from 'flarum/forum/utils/DiscussionControls';
 import extractText from 'flarum/common/utils/extractText';
 import watchForReplies from './watchForReplies';
 import isBlogArticle from './isBlogArticle';
 
 import BranchPanel from './components/BranchPanel';
 import ReplyingTo from './components/ReplyingTo';
-import { setParent, getParent, clearParent } from './state';
+import { getParent, clearParent } from './state';
+import reply, { canReplyIn } from './reply';
 import { forgetBranches, branchFor } from './branches';
 
 /*
@@ -43,11 +43,11 @@ app.initializers.add('ernestdefoe-tributary', () => {
   extend('flarum/forum/components/CommentPost', 'actionItems', function (items) {
     const post = this.attrs.post;
 
-    if (!post || post.isHidden() || !app.session.user) return;
+    if (!post || post.isHidden()) return;
 
     const discussion = post.discussion();
 
-    if (!discussion || !discussion.canReply()) return;
+    if (!canReplyIn(discussion)) return;
 
     /*
      * 🚨 Not on the article of a blog post — only on its comments.
@@ -67,7 +67,7 @@ app.initializers.add('ernestdefoe-tributary', () => {
         {
           className: 'Button Button--link Tributary-replyButton',
           icon: 'fas fa-code-branch',
-          onclick: () => reply(post),
+          onclick: () => reply(discussion, post.id(), post.user()?.displayName()),
         },
         app.translator.trans('ernestdefoe-tributary.forum.reply_to')
       ),
@@ -163,19 +163,3 @@ app.initializers.add('ernestdefoe-tributary', () => {
   extend('flarum/forum/components/DiscussionPage', 'onremove', () => forgetBranches());
 });
 
-/**
- * Open the composer as an answer to one post.
- *
- * 🚨 Through core's own `replyAction`, never by constructing a ReplyComposer.
- * That one call already handles the log-in prompt for a guest, the "you cannot
- * reply" case, an existing draft in the composer, and the composer being
- * minimised — all of which an extension that news up its own composer has to
- * reimplement and will get wrong.
- */
-function reply(post) {
-  const discussion = post.discussion();
-
-  setParent(discussion.id(), post.id(), post.user()?.displayName());
-
-  return DiscussionControls.replyAction.call(discussion, true).catch(() => clearParent());
-}
